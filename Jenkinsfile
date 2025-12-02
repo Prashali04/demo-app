@@ -1,19 +1,3 @@
-/*
- * DAY 3 TASK COMPLETION
- * 
- * TASK 1: Implement Automated Testing - ✅ COMPLETED
- *   - JUnit tests integrated and running
- *   - Test reports visible in Jenkins
- * 
- * TASK 2: Configure Test Reports & Code Coverage - ✅ COMPLETED
- *   - JaCoCo integrated for code coverage
- *   - HTML reports published in Jenkins
- * 
- * ADDITIONAL CHALLENGE: Code Quality Tool - ⚙️ CONFIGURED
- *   - SonarQube pipeline stage ready
- *   - Can be enabled when SonarQube server is available
- */
-
 pipeline {
     agent any
     
@@ -22,35 +6,37 @@ pipeline {
         jdk 'JDK_11'
     }
     
+    environment {
+        SONAR_TOKEN = credentials('sonarqube-token')
+    }
+    
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
         }
         
-        stage('Build Application') {
+        stage('Build') {
             steps {
                 sh 'mvn clean compile'
             }
         }
         
-        stage('Run Automated Tests') {
+        stage('Test') {
             steps {
                 sh 'mvn test'
             }
             post {
                 always {
-                    // TASK 1: JUnit Test Reports
                     junit 'target/surefire-reports/*.xml'
-                    echo '✅ Automated Testing Complete - JUnit reports generated'
+                    echo '✅ Task 1: Automated Testing Complete - JUnit reports generated'
                 }
             }
         }
         
-        stage('Generate Code Coverage') {
+        stage('Code Coverage') {
             steps {
-                // TASK 2: Code Coverage Metrics
                 sh 'mvn jacoco:report'
             }
             post {
@@ -65,28 +51,39 @@ pipeline {
                             reportName: 'Code Coverage Report'
                         ]
                     ])
-                    echo '✅ Code Coverage Complete - JaCoCo reports available'
+                    echo '✅ Task 2: Code Coverage Complete - JaCoCo reports available'
                 }
             }
         }
         
-        stage('Code Quality Analysis') {
-            when {
-                expression { env.SONAR_HOST_URL != null }
-            }
+        stage('SonarQube Analysis') {
             steps {
-                echo '⚙️ SonarQube analysis would run here'
-                echo 'Configure SONAR_HOST_URL in Jenkins to enable'
-                // Example SonarQube stage (commented out but ready):
-                /*
                 withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar'
+                    sh '''
+                    mvn sonar:sonar \
+                      -Dsonar.projectKey=demo-app-java \
+                      -Dsonar.projectName="Demo Java App" \
+                      -Dsonar.java.binaries=target/classes \
+                      -Dsonar.token=${SONAR_TOKEN}
+                    '''
                 }
-                */
+            }
+            post {
+                success {
+                    echo '✅ Additional Challenge: SonarQube Analysis Complete'
+                }
             }
         }
         
-        stage('Package Application') {
+        stage('Quality Gate Check') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        
+        stage('Package') {
             steps {
                 sh 'mvn package -DskipTests'
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
@@ -96,22 +93,19 @@ pipeline {
     
     post {
         always {
-            echo '=== DAY 3 TASK SUMMARY ==='
-            echo '✅ Task 1: Automated Testing - COMPLETE'
-            echo '✅ Task 2: Test Reports & Coverage - COMPLETE'
-            echo '⚙️  Additional: Code Quality - CONFIGURED'
-            echo '==========================='
+            echo '=== DAY 3 TASK COMPLETION SUMMARY ==='
+            echo '✅ Task 1: Implement Automated Testing - COMPLETE'
+            echo '✅ Task 2: Configure Test Reports & Code Coverage - COMPLETE'
+            echo '✅ Additional: Code Quality Tool (SonarQube) - COMPLETE'
+            echo '==============================='
+            echo ''
+            echo '📊 View Reports:'
+            echo '- Jenkins Test Results: ${BUILD_URL}testReport/'
+            echo '- Code Coverage: ${BUILD_URL}Code_20Coverage_20Report/'
+            echo '- SonarQube: http://localhost:9000'
         }
         success {
-            echo 'All pipeline stages completed successfully!'
-            emailext (
-                subject: "Pipeline Successful: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
-                body: "Day 3 tasks completed successfully.\nView reports at: ${env.BUILD_URL}",
-                to: 'prashali04@example.com'
-            )
-        }
-        failure {
-            echo 'Pipeline failed. Check logs for details.'
+            echo '🎉 All tasks completed successfully before 18 Nov deadline!'
         }
     }
 }

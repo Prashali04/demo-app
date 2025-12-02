@@ -1,25 +1,21 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
+    
     <groupId>com.example</groupId>
     <artifactId>demo-app</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-
+    
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.8.2</junit.version>
-        <jacoco.version>0.8.10</jacoco.version>
-        <sonar.host.url>http://localhost:9000</sonar.host.url>
-        <sonar.token>${env.SONAR_TOKEN}</sonar.token>
+        <jacoco.version>0.8.8</jacoco.version>
     </properties>
-
+    
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -28,51 +24,72 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
+    
     <build>
         <plugins>
-            <!-- Compiler plugin -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
-            </plugin>
-
-            <!-- Surefire for tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M5</version>
             </plugin>
-
-            <!-- JaCoCo for coverage -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
                 <executions>
                     <execution>
-                        <id>prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
                     <execution>
                         <id>report</id>
-                        <phase>test</phase>
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-
-            <!-- SonarQube Maven plugin -->
-            <plugin>
-                <groupId>org.sonarsource.scanner.maven</groupId>
-                <artifactId>sonar-maven-plugin</artifactId>
-                <version>4.0.0.4121</version>
+            <execution>
+                <id>jacoco-xml-report</id>
+                <phase>verify</phase>
+                <goals>
+                    <goal>report</goal>
+                </goals>
+                <configuration>
+                    <formats>XML</formats>
+                    <outputDirectory>target/site/jacoco</outputDirectory>
+                </configuration>
+            </execution>
+            <execution>
+                <id>jacoco-html-report</id>
+                <phase>verify</phase>
+                <goals>
+                    <goal>report</goal>
+                </goals>
+                <configuration>
+                    <formats>HTML</formats>
+                    <outputDirectory>target/site/jacoco</outputDirectory>
+                </configuration>
+            </execution>
             </plugin>
         </plugins>
     </build>
 </project>
+
+    <!-- SonarQube Properties -->
+    <properties>
+        <sonar.host.url>http://localhost:9000</sonar.host.url>
+        <sonar.login>${env.SONAR_TOKEN}</sonar.login>
+    </properties>
+
+    <!-- SonarQube Maven Plugin -->
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>3.10.0.2594</version>
+            </plugin>
+        </plugins>
+    </build>
