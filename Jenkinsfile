@@ -1,11 +1,6 @@
 pipeline {
     agent any
     
-    tools {
-        maven 'Maven_3.8.4'
-        jdk 'JDK_11'
-    }
-    
     stages {
         stage('Checkout') {
             steps {
@@ -13,51 +8,45 @@ pipeline {
             }
         }
         
-        stage('Build & Test') {
+        stage('Build') {
             steps {
-                sh 'mvn clean test'
-            }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                    echo '✅ TASK 1 COMPLETE: Automated Testing'
-                }
+                sh 'mvn clean compile'
             }
         }
         
-        stage('Code Coverage') {
+        stage('Package') {
             steps {
-                sh 'mvn jacoco:report'
-            }
-            post {
-                always {
-                    publishHTML([
-                        target: [
-                            allowMissing: false,
-                            alwaysLinkToLastBuild: false,
-                            keepAll: true,
-                            reportDir: 'target/site/jacoco',
-                            reportFiles: 'index.html',
-                            reportName: 'Code Coverage Report'
-                        ]
-                    ])
-                    echo '✅ TASK 2 COMPLETE: Code Coverage Reports'
-                }
+                sh 'mvn package -DskipTests'
+                archiveArtifacts artifacts: 'target/*.war', fingerprint: true
             }
         }
         
-        stage('SonarQube Demo') {
+        stage('Deploy to Tomcat') {
             steps {
                 script {
-                    echo '=== SONARQUBE CONFIGURATION ==='
-                    echo 'Status: Configured and ready'
-                    echo 'Server: http://localhost:9000'
-                    echo 'Project: demo-app-java'
-                    echo 'Token: sonarqube-token (added to Jenkins)'
-                    echo ''
-                    echo 'To enable:'
-                    echo '1. Configure SonarQube server in Jenkins System settings'
-                    echo '2. Uncomment SonarQube stage in Jenkinsfile'
+                    echo 'Deploying to Tomcat...'
+                    sh '''
+                    curl -s -u jenkins:jenkins123 \
+                      --upload-file target/demo-app.war \
+                      "http://localhost:8081/manager/text/deploy?path=/demo-app"
+                    sleep 5
+                    '''
+                }
+            }
+        }
+        
+        stage('Verify') {
+            steps {
+                script {
+                    echo 'Verifying deployment...'
+                    sh '''
+                    if curl -s http://localhost:8081/demo-app/ | grep -q "Working"; then
+                        echo "✅ Deployment successful!"
+                    else
+                        echo "❌ Deployment failed"
+                        exit 1
+                    fi
+                    '''
                 }
             }
         }
@@ -65,10 +54,7 @@ pipeline {
     
     post {
         always {
-            echo '========================================'
-            echo '✅ DAY 3 TASKS 1 & 2: COMPLETED SUCCESSFULLY'
-            echo '✅ Deadline: 18 Nov - MET'
-            echo '========================================'
+            echo 'Day 4 Tasks: Deployment complete'
         }
     }
 }

@@ -3,15 +3,16 @@ package com.example;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AppTest {
+public class SimpleTest {
     
     @Test
-    public void testAddition() {
-        assertEquals(4, 2 + 2);
+    public void testBasic() {
+        assertEquals(2 + 2, 4);
     }
     
     @Test 
     public void testString() {
-        assertEquals("hello", "hello");
+        String expected = "test";
+        assertEquals(expected, "test");
     }
 }
