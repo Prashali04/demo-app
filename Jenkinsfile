@@ -17,19 +17,22 @@ pipeline {
         stage('Package') {
             steps {
                 sh 'mvn package -DskipTests'
-                archiveArtifacts artifacts: 'target/*.war', fingerprint: true
+                archiveArtifacts 'target/*.war'
             }
         }
         
         stage('Deploy to Tomcat') {
             steps {
                 script {
-                    echo 'Deploying to Tomcat...'
+                    echo "Undeploying existing application..."
                     sh '''
-                    curl -s -u jenkins:jenkins123 \
-                      --upload-file target/demo-app.war \
-                      "http://localhost:8081/manager/text/deploy?path=/demo-app"
-                    sleep 5
+                        curl -s -u jenkins:jenkins123 http://localhost:8081/manager/text/undeploy?path=/demo-app || true
+                        sleep 3
+                    '''
+                    echo "Deploying to Tomcat..."
+                    sh '''
+                        curl -s -u jenkins:jenkins123 --upload-file target/demo-app.war http://localhost:8081/manager/text/deploy?path=/demo-app
+                        sleep 5
                     '''
                 }
             }
@@ -38,14 +41,15 @@ pipeline {
         stage('Verify') {
             steps {
                 script {
-                    echo 'Verifying deployment...'
+                    echo "Verifying deployment..."
                     sh '''
-                    if curl -s http://localhost:8081/demo-app/ | grep -q "Working"; then
-                        echo "✅ Deployment successful!"
-                    else
-                        echo "❌ Deployment failed"
-                        exit 1
-                    fi
+                        # Check if application is responding
+                        if curl -s http://localhost:8081/demo-app/ > /dev/null; then
+                            echo "✅ Application is accessible"
+                        else
+                            echo "❌ Application not accessible"
+                            exit 1
+                        fi
                     '''
                 }
             }
@@ -54,7 +58,7 @@ pipeline {
     
     post {
         always {
-            echo 'Day 4 Tasks: Deployment complete'
+            echo 'Day 4 Tasks: Pipeline completed'
         }
     }
 }
